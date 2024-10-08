@@ -109,25 +109,9 @@ Clear-Environment
 New-CustomVMSwitch
 New-CustomVM
 
-if (-not $TestMode) {
-    # Start the VM and wait for IP only in full mode
-    Start-VM -Name $VMName
-    Write-Output "Started VM: $VMName"
-    
-    # Wait for IP address (with timeout)
-    $timeout = 300
-    $timer = [Diagnostics.Stopwatch]::StartNew()
-    while (($timer.Elapsed.TotalSeconds -lt $timeout) -and (-not ($ip = (Get-VMNetworkAdapter -VMName $VMName).IPAddresses | Where-Object { $_ -match '^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$' } | Select-Object -First 1))) {
-        Start-Sleep -Seconds 5
-    }
-    $timer.Stop()
-    
-    if ($ip) {
-        Write-Output "VM '$VMName' is running. IP address: $ip"
-    } else {
-        Write-Output "VM '$VMName' is running, but no IP address was detected within the timeout period."
-    }
-}
+# Start the VM
+Start-VM -Name $VMName
+Write-Output "Started VM: $VMName"
 
 Write-Output "Script completed. Final VM state:"
 Get-VM -Name $VMName | Format-Table Name, State

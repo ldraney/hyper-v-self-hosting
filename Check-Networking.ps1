@@ -1,26 +1,22 @@
 # Run this as Administrator in PowerShell
-
-# Define the VM name
 $VMName = "UbuntuVM"
 
-# Check if the VM exists
-if (-not (Get-VM -Name $VMName -ErrorAction SilentlyContinue)) {
-    Write-Error "VM '$VMName' not found. Please check the VM name and try again."
-    exit
-}
+# Get VM network adapter information
+$vmAdapter = Get-VMNetworkAdapter -VMName $VMName
+Write-Host "VM Network Adapter Configuration:"
+$vmAdapter | Format-List SwitchName, MacAddress, IPAddresses, Status
 
-# Get the current switch configuration
-$currentSwitch = Get-VMNetworkAdapter -VMName $VMName | Select-Object -ExpandProperty SwitchName
-if ($currentSwitch) {
-    Write-Host "Current switch for $VMName`: $currentSwitch"
-} else {
-    Write-Host "No network adapter found for $VMName"
-}
+# Check if the switch is external
+$switch = Get-VMSwitch -Name $vmAdapter.SwitchName
+Write-Host "`nSwitch Configuration:"
+$switch | Format-List Name, SwitchType, NetAdapterInterfaceDescription
 
-# List all available switches
-Write-Host "`nAvailable switches:"
-Get-VMSwitch | Format-Table Name, SwitchType
+# Check the host's network adapter connected to the switch
+$hostAdapter = Get-NetAdapter | Where-Object { $_.InterfaceDescription -eq $switch.NetAdapterInterfaceDescription }
+Write-Host "`nHost Network Adapter Configuration:"
+$hostAdapter | Format-List Name, Status, LinkSpeed, MacAddress
 
-# Get detailed network adapter information for the VM
-Write-Host "`nDetailed network adapter information for $VMName`:"
-Get-VMNetworkAdapter -VMName $VMName | Format-List Name, IsManagementOs, SwitchName, MacAddress, IpAddresses, Status
+# Check DHCP status on the host adapter
+$dhcpStatus = Get-NetIPInterface -InterfaceAlias $hostAdapter.Name -AddressFamily IPv4
+Write-Host "`nDHCP Status on Host Adapter:"
+$dhcpStatus | Format-List InterfaceAlias, Dhcp
